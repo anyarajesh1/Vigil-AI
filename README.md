@@ -14,4 +14,4 @@ exact neighborhood.
 - **Deploy:** Vercel + Render.com
 
 ## Status
-In active development — Day 1
+In active development — Day 2
