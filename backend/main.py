@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import crime, weather, emergency, ai
+from routers import crime, weather, emergency, ai, rag
 
 app = FastAPI(title="Vigil-AI API")
 
@@ -16,6 +16,7 @@ app.include_router(crime.router, prefix="/api")
 app.include_router(weather.router, prefix="/api")
 app.include_router(emergency.router, prefix="/api")
 app.include_router(ai.router, prefix="/api")
+app.include_router(rag.router, prefix="/api")
 
 @app.get("/")
 def root():
