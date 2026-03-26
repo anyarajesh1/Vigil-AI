@@ -171,6 +171,36 @@ const saveCurrentLocation = async () => {
     }
   }
 
+  const sendAlertEmail = async () => {
+    const highIncidents = incidents.filter((i: any) => i.severity === "high")
+    if (highIncidents.length === 0) {
+      alert("No high-risk incidents to alert about right now!")
+      return
+    }
+    try {
+      const res = await fetch("http://127.0.0.1:8000/api/send-alert", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to_email: session?.user?.email,
+          user_name: session?.user?.name,
+          zip_code: zip,
+          alert_type: "High Risk Incidents Detected",
+          message: `${highIncidents.length} high-risk incidents reported near zip code ${zip}. Stay aware of your surroundings.`,
+          incident_count: highIncidents.length
+        })
+      })
+      const data = await res.json()
+      if (data.status === "success") {
+        alert("✅ Alert email sent to " + session?.user?.email)
+      } else {
+        alert("Error sending email: " + data.error)
+      }
+    } catch (error) {
+      alert("Could not send email. Is backend running?")
+    }
+  }
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
     if (inputZip.length === 5) setZip(inputZip)
@@ -193,6 +223,12 @@ const saveCurrentLocation = async () => {
           <h1 className="text-3xl font-bold">⚡ Vigil-AI</h1>
           <div className="flex items-center gap-4">
             <p className="text-gray-400">{session?.user?.name}</p>
+            <button
+              onClick={sendAlertEmail}
+              className="bg-yellow-600 px-4 py-2 rounded-lg hover:bg-yellow-700 transition text-sm"
+            >
+              📧 Email Alert
+            </button>
             <button
               onClick={() => signOut({ callbackUrl: "/login" })}
               className="bg-red-600 px-4 py-2 rounded-lg hover:bg-red-700 transition"
