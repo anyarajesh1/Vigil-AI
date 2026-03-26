@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 import { useEffect, useRef } from "react"
 
@@ -24,30 +25,37 @@ const severityColors: Record<string, string> = {
 }
 
 export default function SafetyMap({ incidents, center }: SafetyMapProps) {
-  const mapRef = useRef<any>(null)
+  const mapRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<any>(null)
 
   useEffect(() => {
     if (typeof window === "undefined") return
+    if (!mapRef.current) return
+
     if (mapInstanceRef.current) {
       mapInstanceRef.current.remove()
       mapInstanceRef.current = null
     }
 
-    const initMap = async () => {
+    const timer = setTimeout(async () => {
+      if (!mapRef.current) return
+
       const L = (await import("leaflet")).default
       await import("leaflet/dist/leaflet.css")
 
-      if (!mapRef.current) return
+      if (mapInstanceRef.current) return
 
-      const map = L.map(mapRef.current).setView(center, 13)
+      const map = L.map(mapRef.current, {
+        center: center,
+        zoom: 13,
+      })
       mapInstanceRef.current = map
 
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: "© OpenStreetMap contributors",
       }).addTo(map)
 
-      incidents.forEach((incident) => {
+      incidents.forEach((incident: Incident) => {
         const circle = L.circleMarker([incident.lat, incident.lng], {
           radius: 10,
           fillColor: severityColors[incident.severity],
@@ -64,11 +72,10 @@ export default function SafetyMap({ incidents, center }: SafetyMapProps) {
           </div>
         `)
       })
-    }
-
-    initMap()
+    }, 100)
 
     return () => {
+      clearTimeout(timer)
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove()
         mapInstanceRef.current = null

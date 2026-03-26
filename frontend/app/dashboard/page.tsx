@@ -16,16 +16,24 @@ export default function Dashboard() {
   const [emergency, setEmergency] = useState<any>(null)
   const [center, setCenter] = useState<[number, number]>([37.7749, -122.4194])
   const [loading, setLoading] = useState(false)
+  const [aiSummary, setAiSummary] = useState("")
+  const [aiLoading, setAiLoading] = useState(false)
+  const [ragAlert, setRagAlert] = useState("")
+  const [savedLocations, setSavedLocations] = useState<any[]>([])
+  const [saveLabel, setSaveLabel] = useState("")
+  const [showSaveForm, setShowSaveForm] = useState(false)
 
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/login")
-    }
+    if (status === "unauthenticated") router.push("/login")
   }, [status])
 
   useEffect(() => {
     if (zip) fetchAllData(zip)
   }, [zip])
+
+  useEffect(() => {
+    if (session?.user?.id) fetchSavedLocations()
+  }, [session])
 
   const fetchAllData = async (zipCode: string) => {
     setLoading(true)
@@ -47,10 +55,120 @@ export default function Dashboard() {
       if (weatherData.lat && weatherData.lng) {
         setCenter([weatherData.lat, weatherData.lng])
       }
+
+      // Get AI summary
+      fetchAISummary(zipCode, crimeData.incidents || [], weatherData, emergencyData.emergencies || [])
+
+      // Get RAG personalized alert
+      if (session?.user?.id) {
+        fetchRagAlert(zipCode, crimeData.incidents || [], weatherData)
+      }
+
     } catch (error) {
       console.error("Error fetching data:", error)
     }
     setLoading(false)
+  }
+
+  const fetchAISummary = async (zipCode: string, inc: any[], weath: any, emerg: any[]) => {
+    setAiLoading(true)
+    try {
+      const res = await fetch("http://127.0.0.1:8000/api/summarize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          zip: zipCode,
+          incidents: inc,
+          weather: weath,
+          emergencies: emerg
+        })
+      })
+      const data = await res.json()
+      setAiSummary(data.summary || "")
+    } catch (error) {
+      console.error("AI summary error:", error)
+    }
+    setAiLoading(false)
+  }
+
+const fetchRagAlert = async (zipCode: string, inc: any[], weath: any) => {
+    const userId = session?.user?.id || session?.user?.email
+    if (!userId) return
+    try {
+      const res = await fetch("http://127.0.0.1:8000/api/rag-alert", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: userId,
+          zip: zipCode,
+          incidents: inc,
+          weather: weath
+        })
+      })
+      const data = await res.json()
+      setRagAlert(data.alert || "")
+    } catch (error) {
+      console.error("RAG alert error:", error)
+    }
+  }
+
+const fetchSavedLocations = async () => {
+    const userId = session?.user?.id || session?.user?.email
+    if (!userId) return
+    try {
+      const res = await fetch(`http://127.0.0.1:8000/api/locations/${userId}`)
+      const data = await res.json()
+      setSavedLocations(data.locations || [])
+    } catch (error) {
+      console.error("Error fetching locations:", error)
+    }
+  }
+
+const saveCurrentLocation = async () => {
+    if (!saveLabel.trim()) return
+    
+    const userId = session?.user?.id || session?.user?.email
+    if (!userId) {
+      alert("Please sign in again")
+      return
+    }
+
+    try {
+      const res = await fetch("http://127.0.0.1:8000/api/locations/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: userId,
+          label: saveLabel,
+          address: zip,
+          zip_code: zip,
+          lat: center[0],
+          lng: center[1]
+        })
+      })
+      const data = await res.json()
+      console.log("Save response:", data)
+      if (data.status === "success" || data.status === "exists") {
+        fetchSavedLocations()
+        setSaveLabel("")
+        setShowSaveForm(false)
+        alert(data.message)
+      } else {
+        alert("Error saving: " + data.error)
+      }
+    } catch (error) {
+      console.error("Error saving location:", error)
+      alert("Could not connect to backend. Is it running?")
+    }
+  }
+
+  const deleteLocation = async (id: number) => {
+    try {
+      await fetch(`http://127.0.0.1:8000/api/locations/${id}`, { method: "DELETE" })
+      fetchSavedLocations()
+    } catch (error) {
+      console.error("Error deleting location:", error)
+    }
   }
 
   const handleSearch = (e: React.FormEvent) => {
@@ -102,6 +220,28 @@ export default function Dashboard() {
           </button>
         </form>
 
+        {/* RAG Personalized Alert */}
+        {ragAlert && (
+          <div className="bg-blue-900/40 border border-blue-500 p-4 rounded-xl mb-6">
+            <p className="text-blue-300 font-semibold text-sm uppercase mb-1">
+              📍 Personalized Alert
+            </p>
+            <p>{ragAlert}</p>
+          </div>
+        )}
+
+        {/* AI Summary */}
+        <div className="bg-gray-900 border border-gray-700 p-6 rounded-2xl mb-6">
+          <p className="text-gray-400 font-semibold text-sm uppercase mb-2">
+            🤖 AI Safety Summary
+          </p>
+          {aiLoading ? (
+            <p className="text-gray-400 animate-pulse">Analyzing your neighborhood...</p>
+          ) : (
+            <p className="text-gray-100 leading-relaxed">{aiSummary}</p>
+          )}
+        </div>
+
         {/* Weather Alert Banner */}
         {weather && (
           <div className={`p-4 rounded-xl mb-6 ${
@@ -120,14 +260,44 @@ export default function Dashboard() {
 
         {/* Safety Map */}
         <div className="mb-6">
-          <h2 className="text-xl font-semibold mb-3">
-            🗺️ Neighborhood Safety Map — {zip}
-          </h2>
-          <SafetyMap
-            zip={zip}
-            incidents={incidents}
-            center={center}
-          />
+          <div className="flex justify-between items-center mb-3">
+            <h2 className="text-xl font-semibold">
+              🗺️ Neighborhood Safety Map — {zip}
+            </h2>
+            <button
+              onClick={() => setShowSaveForm(!showSaveForm)}
+              className="bg-green-600 px-4 py-2 rounded-lg hover:bg-green-700 transition text-sm"
+            >
+              + Save Location
+            </button>
+          </div>
+
+          {/* Save Location Form */}
+          {showSaveForm && (
+            <div className="bg-gray-800 p-4 rounded-xl mb-4 flex gap-3">
+              <input
+                type="text"
+                placeholder='Label (e.g. "Home", "Work")'
+                value={saveLabel}
+                onChange={(e) => setSaveLabel(e.target.value)}
+                className="bg-gray-700 text-white px-4 py-2 rounded-lg flex-1 outline-none"
+              />
+              <button
+                onClick={saveCurrentLocation}
+                className="bg-green-600 px-4 py-2 rounded-lg hover:bg-green-700 transition"
+              >
+                Save
+              </button>
+              <button
+                onClick={() => setShowSaveForm(false)}
+                className="bg-gray-600 px-4 py-2 rounded-lg hover:bg-gray-500 transition"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+
+          <SafetyMap zip={zip} incidents={incidents} center={center} />
         </div>
 
         {/* Legend */}
@@ -145,6 +315,37 @@ export default function Dashboard() {
             <span className="text-sm text-gray-400">Low Risk</span>
           </div>
         </div>
+
+        {/* Saved Locations */}
+        {savedLocations.length > 0 && (
+          <div className="bg-gray-900 rounded-2xl p-6 mb-6">
+            <h2 className="text-xl font-semibold mb-4">📍 Saved Locations</h2>
+            <div className="flex flex-col gap-3">
+              {savedLocations.map((loc: any) => (
+                <div key={loc.id} className="bg-gray-800 p-4 rounded-xl flex justify-between items-center">
+                  <div>
+                    <p className="font-semibold">{loc.label}</p>
+                    <p className="text-sm text-gray-400">Zip: {loc.zip_code}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setZip(loc.zip_code)}
+                      className="bg-blue-600 px-3 py-1 rounded-lg text-sm hover:bg-blue-700 transition"
+                    >
+                      View
+                    </button>
+                    <button
+                      onClick={() => deleteLocation(loc.id)}
+                      className="bg-red-600 px-3 py-1 rounded-lg text-sm hover:bg-red-700 transition"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Emergency Alerts */}
         {emergency && emergency.emergencies?.length > 0 && (

@@ -1,7 +1,6 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
 from database import get_db
-import json
 
 router = APIRouter()
 
@@ -22,26 +21,28 @@ class AlertRequest(BaseModel):
 @router.post("/locations/save")
 async def save_location(request: LocationRequest):
     try:
+        import uuid
         conn = get_db()
         cur = conn.cursor()
 
-        # Check if location already exists
         cur.execute(
-            "SELECT id FROM saved_locations WHERE user_id = %s AND zip_code = %s",
+            '''SELECT id FROM "SavedLocation" WHERE "userId" = %s AND "zipCode" = %s''',
             (request.user_id, request.zip_code)
         )
         existing = cur.fetchone()
 
         if existing:
             conn.close()
-            return {"status": "exists", "message": "Location already saved"}
+            return {"status": "exists", "message": "Location already saved!"}
 
-        # Save new location
+        # Generate a cuid-style unique ID like Prisma does
+        new_id = str(uuid.uuid4()).replace("-", "")[:25]
+
         cur.execute(
-            """INSERT INTO saved_locations 
-            (user_id, label, address, zip_code, lat, lng) 
-            VALUES (%s, %s, %s, %s, %s, %s) RETURNING id""",
-            (request.user_id, request.label, request.address,
+            '''INSERT INTO "SavedLocation" 
+            (id, "userId", label, address, "zipCode", lat, lng, "createdAt") 
+            VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) RETURNING id''',
+            (new_id, request.user_id, request.label, request.address,
              request.zip_code, request.lat, request.lng)
         )
         location_id = cur.fetchone()[0]
@@ -62,8 +63,8 @@ async def get_locations(user_id: str):
         conn = get_db()
         cur = conn.cursor()
         cur.execute(
-            """SELECT id, label, address, zip_code, lat, lng 
-            FROM saved_locations WHERE user_id = %s""",
+            '''SELECT id, label, address, "zipCode", lat, lng 
+            FROM "SavedLocation" WHERE "userId" = %s''',
             (user_id,)
         )
         rows = cur.fetchall()
@@ -86,11 +87,11 @@ async def get_locations(user_id: str):
         return {"status": "error", "locations": [], "error": str(e)}
 
 @router.delete("/locations/{location_id}")
-async def delete_location(location_id: int):
+async def delete_location(location_id: str):
     try:
         conn = get_db()
         cur = conn.cursor()
-        cur.execute("DELETE FROM saved_locations WHERE id = %s", (location_id,))
+        cur.execute('''DELETE FROM "SavedLocation" WHERE id = %s''', (location_id,))
         conn.commit()
         conn.close()
         return {"status": "success", "message": "Location removed"}
@@ -103,15 +104,13 @@ async def get_rag_alert(request: AlertRequest):
         conn = get_db()
         cur = conn.cursor()
 
-        # Get user's saved locations
         cur.execute(
-            "SELECT zip_code, label FROM saved_locations WHERE user_id = %s",
+            '''SELECT "zipCode", label FROM "SavedLocation" WHERE "userId" = %s''',
             (request.user_id,)
         )
         saved = cur.fetchall()
         conn.close()
 
-        # Check if current zip matches any saved location
         matched_label = None
         for zip_code, label in saved:
             if zip_code == request.zip:
