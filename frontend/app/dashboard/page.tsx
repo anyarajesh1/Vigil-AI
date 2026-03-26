@@ -256,6 +256,30 @@ const saveCurrentLocation = async () => {
           </button>
         </form>
 
+
+        {/* Safety Score */}
+        {incidents.length > 0 && (
+          <div className="flex items-center gap-4 mb-6">
+            <div className={`px-6 py-3 rounded-2xl font-bold text-lg ${
+              incidents.filter((i: any) => i.severity === "high").length >= 3
+                ? "bg-red-900/50 border border-red-500 text-red-300"
+                : incidents.filter((i: any) => i.severity === "high").length >= 1
+                ? "bg-orange-900/50 border border-orange-500 text-orange-300"
+                : "bg-green-900/50 border border-green-500 text-green-300"
+            }`}>
+              {incidents.filter((i: any) => i.severity === "high").length >= 3
+                ? "🔴 High Risk Area"
+                : incidents.filter((i: any) => i.severity === "high").length >= 1
+                ? "🟠 Moderate Risk Area"
+                : "🟢 Low Risk Area"
+              }
+            </div>
+            <p className="text-gray-400 text-sm">
+              {incidents.length} incidents reported near {zip}
+            </p>
+          </div>
+        )}
+
         {/* RAG Personalized Alert */}
         {ragAlert && (
           <div className="bg-blue-900/40 border border-blue-500 p-4 rounded-xl mb-6">
@@ -268,11 +292,15 @@ const saveCurrentLocation = async () => {
 
         {/* AI Summary */}
         <div className="bg-gray-900 border border-gray-700 p-6 rounded-2xl mb-6">
-          <p className="text-gray-400 font-semibold text-sm uppercase mb-2">
+          <p className="text-gray-400 font-semibold text-sm uppercase mb-3">
             🤖 AI Safety Summary
           </p>
           {aiLoading ? (
-            <p className="text-gray-400 animate-pulse">Analyzing your neighborhood...</p>
+            <div className="space-y-2 animate-pulse">
+              <div className="h-4 bg-gray-700 rounded w-full"></div>
+              <div className="h-4 bg-gray-700 rounded w-5/6"></div>
+              <div className="h-4 bg-gray-700 rounded w-4/6"></div>
+            </div>
           ) : (
             <p className="text-gray-100 leading-relaxed">{aiSummary}</p>
           )}
