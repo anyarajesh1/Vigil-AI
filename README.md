@@ -1,17 +1,17 @@
 # ⚡ Vigil-AI
 ### AI that watches over your neighborhood 24/7
 
-A real-time, AI-powered community safety app that delivers 
-personalized crime, weather, and emergency alerts for your 
-exact neighborhood.
+## Live Demo
+- **Frontend:** https://vigil-ai-two.vercel.app
+- **Backend:** https://vigil-ai-backend.onrender.com
 
 ## Tech Stack
 - **Frontend:** Next.js 14 + Tailwind CSS + Leaflet.js
 - **Backend:** FastAPI (Python)
-- **Database:** PostgreSQL + pgvector
+- **Database:** PostgreSQL (Supabase) + pgvector
 - **AI:** Groq API (free)
 - **Auth:** NextAuth.js (Google OAuth)
 - **Deploy:** Vercel + Render.com
 
 ## Status
-In active development — Day 5
+Live and deployed — Day 6
