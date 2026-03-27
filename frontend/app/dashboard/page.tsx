@@ -39,9 +39,9 @@ export default function Dashboard() {
     setLoading(true)
     try {
       const [crimeRes, weatherRes, emergencyRes] = await Promise.all([
-        fetch(`http://127.0.0.1:8000/api/crime?zip=${zipCode}`),
-        fetch(`http://127.0.0.1:8000/api/weather?zip=${zipCode}`),
-        fetch(`http://127.0.0.1:8000/api/emergency?zip=${zipCode}`)
+        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'}/api/crime?zip=${zipCode}`),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'}/api/weather?zip=${zipCode}`),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'}/api/emergency?zip=${zipCode}`)
       ])
 
       const crimeData = await crimeRes.json()
@@ -73,7 +73,7 @@ export default function Dashboard() {
   const fetchAISummary = async (zipCode: string, inc: any[], weath: any, emerg: any[]) => {
     setAiLoading(true)
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/summarize", {
+      const res = await fetch("${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'}/api/summarize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -95,7 +95,7 @@ const fetchRagAlert = async (zipCode: string, inc: any[], weath: any) => {
     const userId = session?.user?.id || session?.user?.email
     if (!userId) return
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/rag-alert", {
+      const res = await fetch("${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'}/api/rag-alert", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -116,7 +116,7 @@ const fetchSavedLocations = async () => {
     const userId = session?.user?.id || session?.user?.email
     if (!userId) return
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/locations/${userId}`)
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'}/api/locations/${userId}`)
       const data = await res.json()
       setSavedLocations(data.locations || [])
     } catch (error) {
@@ -134,7 +134,7 @@ const saveCurrentLocation = async () => {
     }
 
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/locations/save", {
+      const res = await fetch("${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'}/api/locations/save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -164,7 +164,7 @@ const saveCurrentLocation = async () => {
 
   const deleteLocation = async (id: number) => {
     try {
-      await fetch(`http://127.0.0.1:8000/api/locations/${id}`, { method: "DELETE" })
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'}/api/locations/${id}`, { method: "DELETE" })
       fetchSavedLocations()
     } catch (error) {
       console.error("Error deleting location:", error)
@@ -178,7 +178,7 @@ const saveCurrentLocation = async () => {
       return
     }
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/send-alert", {
+      const res = await fetch("${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'}/api/send-alert", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
