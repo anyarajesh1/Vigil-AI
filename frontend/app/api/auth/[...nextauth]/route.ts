@@ -3,7 +3,13 @@ import GoogleProvider from "next-auth/providers/google"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import { PrismaClient } from "@prisma/client"
 
-const prisma = new PrismaClient()
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined
+}
+
+const prisma = globalForPrisma.prisma ?? new PrismaClient()
+
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma
 
 export const authOptions = {
   adapter: PrismaAdapter(prisma),
@@ -15,6 +21,9 @@ export const authOptions = {
   ],
   pages: {
     signIn: "/login",
+  },
+  session: {
+    strategy: "database" as const,
   },
   callbacks: {
     session({ session, user }: { session: any, user: any }) {
