@@ -25,7 +25,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login")
-  }, [status])
+  }, [status, router])
 
   useEffect(() => {
     if (zip) fetchAllData(zip)
@@ -206,10 +206,10 @@ const saveCurrentLocation = async () => {
     if (inputZip.length === 5) setZip(inputZip)
   }
 
-  if (status === "loading") {
+  if (status === "loading" || !session) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-950">
-        <p className="text-white text-xl">Loading...</p>
+        <p className="text-white text-xl animate-pulse">Loading Vigil-AI...</p>
       </div>
     )
   }
