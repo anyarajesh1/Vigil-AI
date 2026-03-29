@@ -8,9 +8,9 @@
 ![License](https://img.shields.io/badge/License-MIT-blue?style=flat)
 
 ## 🌐 Live Demo
-**[→ Try Vigil-AI Live](https://vigil-ai-git-main-anyarajesh1s-projects.vercel.app)**
+**[→ Try Vigil-AI Live](https://vigil-ai-two.vercel.app)**
 
-- **Frontend:** https://vigil-ai-git-main-anyarajesh1s-projects.vercel.app
+- **Frontend:** https://vigil-ai-two.vercel.app
 - **Backend API:** https://vigil-ai-backend.onrender.com
 
 ---
