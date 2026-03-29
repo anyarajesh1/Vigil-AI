@@ -7,6 +7,8 @@
 ![Vercel](https://img.shields.io/badge/Deployed-Vercel-black?style=flat&logo=vercel)
 ![License](https://img.shields.io/badge/License-MIT-blue?style=flat)
 
+> ✅ **Status: Live and deployed**
+
 ## 🌐 Live Demo
 **[→ Try Vigil-AI Live](https://vigil-ai-two.vercel.app)**
 
