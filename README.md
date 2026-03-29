@@ -2,8 +2,7 @@
 ### AI that watches over your neighborhood 24/7
 
 ## Live Demo
-- **Frontend:** https://vigil-ai-two.vercel.app
-- **Backend:** https://vigil-ai-backend.onrender.com
+https://vigil-ai-git-main-anyarajesh1s-projects.vercel.app
 
 ## Tech Stack
 - **Frontend:** Next.js 14 + Tailwind CSS + Leaflet.js
