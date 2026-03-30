@@ -18,18 +18,21 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(false)
   const [aiSummary, setAiSummary] = useState("")
   const [aiLoading, setAiLoading] = useState(false)
+  const [backendLoading, setBackendLoading] = useState(true)
+  const [backendError, setBackendError] = useState(false)
 
-  useEffect(() => {
+useEffect(() => {
     fetchAllData(zip)
   }, [zip])
 
-  const fetchAllData = async (zipCode: string) => {
+const fetchAllData = async (zipCode: string) => {
     setLoading(true)
+    setBackendError(false)
     try {
       const [crimeRes, weatherRes, emergencyRes] = await Promise.all([
-        fetch(`${API_URL}/api/crime?zip=${zipCode}`),
-        fetch(`${API_URL}/api/weather?zip=${zipCode}`),
-        fetch(`${API_URL}/api/emergency?zip=${zipCode}`)
+        fetch(`${API_URL}/api/crime?zip=${zipCode}`, { signal: AbortSignal.timeout(90000) }),
+        fetch(`${API_URL}/api/weather?zip=${zipCode}`, { signal: AbortSignal.timeout(90000) }),
+        fetch(`${API_URL}/api/emergency?zip=${zipCode}`, { signal: AbortSignal.timeout(90000) })
       ])
       const crimeData = await crimeRes.json()
       const weatherData = await weatherRes.json()
@@ -37,16 +40,18 @@ export default function Dashboard() {
       setIncidents(crimeData.incidents || [])
       setWeather(weatherData)
       setEmergency(emergencyData)
+      setBackendLoading(false)
       if (weatherData.lat && weatherData.lng) {
         setCenter([weatherData.lat, weatherData.lng])
       }
       fetchAISummary(zipCode, crimeData.incidents || [], weatherData, emergencyData.emergencies || [])
     } catch (error) {
       console.error("Error fetching data:", error)
+      setBackendError(true)
+      setBackendLoading(false)
     }
     setLoading(false)
   }
-
   const fetchAISummary = async (zipCode: string, inc: any[], weath: any, emerg: any[]) => {
     setAiLoading(true)
     try {
@@ -121,6 +126,38 @@ export default function Dashboard() {
             {loading ? "Loading..." : "Search"}
           </button>
         </form>
+                
+                {/* Backend Status Banner */}
+        {backendLoading && !backendError && (
+          <div className="bg-yellow-900/20 border border-yellow-500/30 rounded-2xl p-5 mb-6 flex items-center gap-4">
+            <div className="flex-shrink-0">
+              <div className="w-8 h-8 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+            <div>
+              <p className="text-yellow-400 font-semibold">Backend is waking up...</p>
+              <p className="text-gray-400 text-sm mt-0.5">
+                Free hosting spins down after inactivity. This takes 30-60 seconds on first load. Hang tight!
+              </p>
+            </div>
+          </div>
+        )}
+
+        {backendError && (
+          <div className="bg-red-900/20 border border-red-500/30 rounded-2xl p-5 mb-6 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-red-400 font-semibold">Could not connect to backend</p>
+              <p className="text-gray-400 text-sm mt-0.5">
+                The server may still be starting up. Please wait a moment and try again.
+              </p>
+            </div>
+            <button
+              onClick={() => fetchAllData(zip)}
+              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition whitespace-nowrap"
+            >
+              Retry →
+            </button>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <div className={`p-5 rounded-2xl border ${
