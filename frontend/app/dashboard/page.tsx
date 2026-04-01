@@ -7,7 +7,6 @@ import Link from "next/link"
 const SafetyMap = dynamic(() => import("../components/SafetyMap"), { ssr: false })
 
 const API_URL = ""
-fetch(`${API_URL}/api/crime?zip=${zipCode}`)
 
 export default function Dashboard() {
   const [zip, setZip] = useState("94102")
